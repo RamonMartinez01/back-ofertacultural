@@ -1,0 +1,35 @@
+services:
+
+  # ----------------------------------------------
+  # Sobrescritura de la API para desarrollo en vivo
+  # ----------------------------------------------
+  api:
+    volumes:
+      # Sincroniza el código en tiempo real
+      - .:/app
+    # Sobrescribe el comando del Dockerfile para habilitar el auto-reload
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+
+  # ----------------------------------------------
+  # PgAdmin (Herramienta de Administración)
+  # ----------------------------------------------
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: cultural_pgadmin
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: "${PGADMIN_EMAIL:-admin@cultural.com}"
+      PGADMIN_DEFAULT_PASSWORD: "${PGADMIN_PASSWORD:-admin123}"
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+    ports:
+      - "5010:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      - db
+    networks:
+      - cultural_network
+
+volumes:
+  pgadmin_data:
+    name: cultural_pgadmin_data

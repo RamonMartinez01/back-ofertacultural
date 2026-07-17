@@ -1,0 +1,60 @@
+# ==========================================
+# .gitignore - Delonix-Regia MLOps Backend
+# ==========================================
+
+# 1. Secretos y Configuración Local (¡CRÍTICO!)
+# Nunca subir credenciales reales. Usar .env.example como plantilla.
+.env
+.env.*
+!.env.example
+
+# 2. Entornos Virtuales
+# Ignoramos las dependencias instaladas localmente por cada desarrollador.
+venv/
+env/
+.venv/
+.env/
+
+# 3. Archivos Compilados de Python
+# Archivos temporales que Python genera para ejecutar más rápido.
+**/__pycache__/
+*.py[cod]
+*$py.class
+alembic/__pycache__/
+alembic/__pycache__/env.cpython-314.pyc
+
+
+# 4. Bases de Datos Locales
+# Aunque usamos PostgreSQL, si alguna vez hacemos tests con SQLite, no lo subimos.
+*.sqlite3
+*.db
+
+# 5. Entornos de Desarrollo (IDEs)
+# Configuraciones personales del editor de cada desarrollador.
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 6. Archivos del Sistema Operativo
+# Basura oculta que generan Mac y Windows automáticamente.
+.DS_Store
+Thumbs.db
+
+# 7. Herramientas de Testing y Cobertura (Futuro)
+# Cuando agreguemos Pytest, ignoraremos sus reportes generados.
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+
+# 8. Artefactos de Machine Learning y Logs
+# Si Penélope alguna vez descarga un modelo localmente para pruebas,
+# evitamos subir archivos de varios gigabytes a GitHub.
+*.log
+*.pt
+*.pth
+*.h5
+*.onnx
+models_cache/
+alembic/__pycache__/env.cpython-314.pyc

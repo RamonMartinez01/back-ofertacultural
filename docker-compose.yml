@@ -1,0 +1,62 @@
+services:
+
+  # ----------------------------------------------
+  # 1. Base de Datos (PostGIS)
+  # ----------------------------------------------
+  db:
+    image: postgis/postgis:15-3.4-alpine
+    container_name: cultural_db
+    restart: always
+    env_file:
+      - .env
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 350M 
+    networks:
+      - cultural_network
+
+  # ----------------------------------------------
+  # 2. API FastAPI
+  # ----------------------------------------------
+  api:
+    build: .
+    container_name: cultural_api
+    restart: always
+    ports:
+      - "8010:8000"
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 250M
+    networks:
+      - cultural_network
+
+# ----------------------------------------------
+# VOLUMEN PERSISTENTE
+# ----------------------------------------------
+volumes:
+  postgres_data:
+    name: cultural_postgres_data
+
+# ----------------------------------------------
+# RED INTERNA
+# ----------------------------------------------
+networks:
+  cultural_network:
+    name: cultural_network
+    driver: bridge
