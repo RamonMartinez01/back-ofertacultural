@@ -114,7 +114,7 @@ data "aws_ami" "ubuntu" {
 }
 
 # -----------------------------------------------------------
-# 5. La Instancia EC2 (Capa Gratuita)
+# 5. La Instancia EC2 (Con Bootstrapping)
 # -----------------------------------------------------------
 
 resource "aws_instance" "app_server" {
@@ -123,8 +123,30 @@ resource "aws_instance" "app_server" {
   iam_instance_profile = aws_iam_instance_profile.ec2_profile.name
   vpc_security_group_ids = [aws_security_group.web_sg.id]
 
-  # Nota: El user_data (Bash script de inicialización con memoria Swap)
-  # lo agregaremos en la Fase 3.
+  # SCRIPT DE INICIALIZACIÓN AUTOMÁTICA
+  user_data = <<-EOF
+  #!/bin/bash
+  # 1. Configurar 2GB de Memoria Swap para proteger a PostGIS de OOM Kills
+  fallocate -l 2G /swapfile
+  chmod 600 /swapfile
+  mkswap /swapfile
+  swapon /swapfile
+  echo '/swapfile none swap sw 0 0' | tee -a /etc/fstab
+
+  # 2. Instalar Docker y Docker Compose
+  apt-get update -y
+  apt-get install -y ca-certificates curl gnupg
+  install -m 0755 -d /etc/apt/keyrings
+  curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+  chmod a+r /etc/apt/keyrings/docker.gpg
+  echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+  apt-get update -y
+  apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+
+  # 3. Habilitar agente SSM
+  systemctl enable snap.amazon-ssm-agent.amazon-ssm-agent.service
+  systemctl start snap.amazon-ssm-agent.amazon-ssm-agent.service
+  EOF
 
   tags = {
     Name = "MapaCultural-Server"

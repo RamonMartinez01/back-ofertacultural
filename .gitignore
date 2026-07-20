@@ -58,3 +58,9 @@ coverage.xml
 *.onnx
 models_cache/
 alembic/__pycache__/env.cpython-314.pyc
+
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.backup
