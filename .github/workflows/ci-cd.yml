@@ -50,18 +50,18 @@ jobs:
           ENV_BASE64: ${{ secrets.ENV_BASE64 }}
         run: |
           # 1. Enviar comando y capturar el CommandId
-          COMMAND
+          COMMAND_ID=$(aws ssm send-command \
             --targets "Key=tag:Name,Values=MapaCultural-Server" \
             --document-name "AWS-RunShellScript" \
-            --parameters "commands=[
-              \"aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 274847733098.dkr.ecr.us-east-1.amazonaws.com\",
-              \"cd /home/ubuntu\",
-              \"echo $ENV_BASE64 | base64 -d > .env\",
-              \"curl -H 'Cache-Control: no-cache' -s -O https://raw.githubusercontent.com/RamonMartinez01/back-ofertacultural/main/docker-compose.yml\",
-              \"docker pull 274847733098.dkr.ecr.us-east-1.amazonaws.com/cultural-api-repo:latest\",
-              \"docker compose up -d\",
-              \"docker image prune -a -f\"
-            ]" \
+            --parameters '{"commands":[
+              "aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 274847733098.dkr.ecr.us-east-1.amazonaws.com",
+              "cd /home/ubuntu",
+              "echo '"$ENV_BASE64"' | base64 -d > .env",
+              "curl -H '\''Cache-Control: no-cache'\'' -s -O https://raw.githubusercontent.com/RamonMartinez01/back-ofertacultural/main/docker-compose.yml",
+              "docker pull 274847733098.dkr.ecr.us-east-1.amazonaws.com/cultural-api-repo:latest",
+              "docker compose up -d",
+              "docker image prune -a -f"
+            ]}' \
             --comment "Despliegue automatico via CI/CD" \
             --query "Command.CommandId" \
             --output text)
@@ -70,7 +70,7 @@ jobs:
           echo "⏳ Esperando a que el comando termine en la EC2..."
 
           # 2. Polling (Consultar el estado cada 5 segundos)
-           while true; do
+          while true; do
             STATUS=$(aws ssm list-command-invocations \
               --command-id "$COMMAND_ID" \
               --details \
@@ -80,7 +80,7 @@ jobs:
             if [ "$STATUS" == "Success" ]; then
               echo "✅ Despliegue exitoso en EC2."
               break
-            elif [ "$STATUS" == "Failed" ] || [ "$STATUS" == "TimedOut" ] \vert{}\vert{} [ "$STATUS" == "Cancelled" ]; then
+            elif [ "$STATUS" == "Failed" ] || [ "$STATUS" == "TimedOut" ] || [ "$STATUS" == "Cancelled" ]; then
               echo "❌ Error en el despliegue. Estado: $STATUS"
               echo "--- LOGS DEL SERVIDOR ---"
               aws ssm list-command-invocations \
@@ -89,7 +89,7 @@ jobs:
                 --query "CommandInvocations[0].CommandPlugins[0].Output" \
                 --output text
               exit 1
-            elif [ "$STATUS" == "None" ] \vert{}\vert{} [ "$STATUS" == "" ]; then
+            elif [ "$STATUS" == "None" ] || [ "$STATUS" == "" ]; then
               echo "Buscando invocación..."
             else
               echo "Estado actual: $STATUS. Esperando 5 segundos..."
