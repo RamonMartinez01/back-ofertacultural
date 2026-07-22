@@ -58,7 +58,7 @@ jobs:
               \"echo $ENV_BASE64 | base64 -d > .env\",
               \"curl -H 'Cache-Control: no-cache' -s -O https://raw.githubusercontent.com/RamonMartinez01/back-ofertacultural/main/docker-compose.yml\",
               \"docker pull 274847733098.dkr.ecr.us-east-1.amazonaws.com/cultural-api-repo:latest\",
-              \"docker-compose up -d\",
+              \"docker compose up -d\",
               \"docker image prune -a -f\"
             ]" \
             --comment "Despliegue automatico via CI/CD"
