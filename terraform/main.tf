@@ -151,7 +151,13 @@ resource "aws_instance" "app_server" {
   apt-get update -y
   apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
-  # 3. Habilitar agente SSM
+  # 3. Permisos de Docker para el usuario ubuntu
+  usermod -aG docker ubuntu
+
+  # 4. Instalar AWS CLI (Necesario para el ECR Login)
+  snap install aws-cli --classic
+
+  # 5. Habilitar agente SSM
   systemctl enable snap.amazon-ssm-agent.amazon-ssm-agent.service
   systemctl start snap.amazon-ssm-agent.amazon-ssm-agent.service
   EOF
