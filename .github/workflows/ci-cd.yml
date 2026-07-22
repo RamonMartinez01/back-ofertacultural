@@ -49,7 +49,8 @@ jobs:
         env:
           ENV_BASE64: ${{ secrets.ENV_BASE64 }}
         run: |
-          aws ssm send-command \
+          # 1. Enviar comando y capturar el CommandId
+          COMMAND
             --targets "Key=tag:Name,Values=MapaCultural-Server" \
             --document-name "AWS-RunShellScript" \
             --parameters "commands=[
@@ -61,4 +62,37 @@ jobs:
               \"docker compose up -d\",
               \"docker image prune -a -f\"
             ]" \
-            --comment "Despliegue automatico via CI/CD"
+            --comment "Despliegue automatico via CI/CD" \
+            --query "Command.CommandId" \
+            --output text)
+
+          echo "🚀 Comando enviado a SSM. Command ID: $COMMAND_ID"
+          echo "⏳ Esperando a que el comando termine en la EC2..."
+
+          # 2. Polling (Consultar el estado cada 5 segundos)
+           while true; do
+            STATUS=$(aws ssm list-command-invocations \
+              --command-id "$COMMAND_ID" \
+              --details \
+              --query "CommandInvocations[0].Status" \
+              --output text)
+
+            if [ "$STATUS" == "Success" ]; then
+              echo "✅ Despliegue exitoso en EC2."
+              break
+            elif [ "$STATUS" == "Failed" ] || [ "$STATUS" == "TimedOut" ] \vert{}\vert{} [ "$STATUS" == "Cancelled" ]; then
+              echo "❌ Error en el despliegue. Estado: $STATUS"
+              echo "--- LOGS DEL SERVIDOR ---"
+              aws ssm list-command-invocations \
+                --command-id "$COMMAND_ID" \
+                --details \
+                --query "CommandInvocations[0].CommandPlugins[0].Output" \
+                --output text
+              exit 1
+            elif [ "$STATUS" == "None" ] \vert{}\vert{} [ "$STATUS" == "" ]; then
+              echo "Buscando invocación..."
+            else
+              echo "Estado actual: $STATUS. Esperando 5 segundos..."
+            fi
+            sleep 5
+          done
