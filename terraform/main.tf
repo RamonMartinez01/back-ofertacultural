@@ -166,3 +166,14 @@ resource "aws_instance" "app_server" {
     Name = "MapaCultural-Server"
   }
 }
+
+# Outputs
+output "ec2_public_ip" {
+  description = "IP pública de la instancia EC2"
+  value       = aws_instance.app_server.public_ip
+}
+
+output "api_url" {
+  description = "URL completa para acceder a la API"
+  value       = "http://${aws_instance.app_server.public_ip}:8010"
+}
