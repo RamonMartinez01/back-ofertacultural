@@ -4,6 +4,11 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 5.0"
     }
+    time = {
+      source  = "hashicorp/time"
+      version = "~> 0.9"
+    }
+
   }
 }
 
@@ -164,5 +169,43 @@ resource "aws_instance" "app_server" {
 
   tags = {
     Name = "MapaCultural-Server"
+  }
+}
+
+# Outputs
+output "ec2_public_ip" {
+  description = "IP pública de la instancia EC2"
+  value       = aws_instance.app_server.public_ip
+}
+
+output "api_url" {
+  description = "URL completa para acceder a la API"
+  value       = "http://${aws_instance.app_server.public_ip}:8010"
+}
+
+# Health Check - Verifica que la API responda
+resource "time_sleep" "wait_for_api" {
+  depends_on = [aws_instance.app_server]
+  
+  create_duration = "60s"
+}
+
+resource "terraform_data" "health_check" {
+  depends_on = [time_sleep.wait_for_api]
+  
+  provisioner "local-exec" {
+    command = <<-EOT
+      echo "Esperando que la API esté disponible..."
+      for i in {1..10}; do
+        if curl -s -o /dev/null -w "%%{http_code}" http://${aws_instance.app_server.public_ip}:8010 | grep -q "200"; then
+          echo "✅ API respondiendo correctamente en http://${aws_instance.app_server.public_ip}:8010"
+          exit 0
+        fi
+        echo "Intento $i/10 - API no disponible, esperando 6 segundos..."
+        sleep 6
+      done
+      echo "❌ Health Check falló después de 10 intentos"
+      exit 1
+    EOT
   }
 }
